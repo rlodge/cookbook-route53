@@ -80,5 +80,5 @@ template "/etc/dhcp/dhclient.conf" do
   owner "root"
   group "root"
   mode 0644
-  notifies :restart, resources(:service => "network"), :immediately
+  notifies :restart, resources(:service => "networking"), :immediately
 end

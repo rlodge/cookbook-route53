@@ -19,7 +19,7 @@
 
 include_recipe 'route53'
 
-aws = data_bag_item("aws", "route53")
+aws = Chef::EncryptedDataBagItem.load("aws", "route53")
 
 # "i-17734b7c.example.com" => ec2.public_hostname
 route53_rr node[:ec2][:instance_id] do

@@ -44,7 +44,7 @@ module Opscode
 
       def resource_record(zone_id, fqdn, type)
         rr = nil
-        options = { :max_items => 100, :name => "platform14.net.", :type => type}
+        options = { :name => fqdn, :type => type }
         response = route53.list_resource_record_sets(zone_id, options)
         if response.status == 200
           records = response.body['ResourceRecordSets']

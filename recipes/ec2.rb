@@ -24,6 +24,7 @@ aws = Chef::EncryptedDataBagItem.load("aws", "route53")
 # "i-17734b7c.example.com" => ec2.public_hostname
 route53_rr node[:ec2][:instance_id] do
   zone node[:route53][:zone]
+
   aws_access_key_id aws["aws_access_key_id"]
   aws_secret_access_key aws["aws_secret_access_key"]
 
@@ -47,6 +48,7 @@ route53_rr new_hostname do
   fqdn new_fqdn
   type "CNAME"
   values(["#{node[:ec2][:public_hostname]}."])
+
   action :update
 end
 

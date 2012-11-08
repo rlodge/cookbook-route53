@@ -16,6 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 include Opscode::Route53::Route53
 
 action :create do
@@ -53,7 +54,5 @@ action :update do
         new_resource.type, new_resource.ttl, new_resource.values, rr)
 
   end
-
 end
 private
-

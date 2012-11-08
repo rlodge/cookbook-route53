@@ -35,8 +35,8 @@ route53_rr node[:ec2][:instance_id] do
 end
 
 t = node["route53"]["ec2"]["type"]
-e = node["route53"]["ec2"]["env"]
-new_hostname = "#{t}-#{e}-#{node["ec2"]["instance_id"]}"
+
+new_hostname = "#{t}-#{node["ec2"]["instance_id"]}"
 new_fqdn = "#{new_hostname}.#{node[:route53][:zone]}"
 
 route53_rr new_hostname do
@@ -67,7 +67,7 @@ file "/etc/hostname" do
   notifies :run, resources(:execute => "hostname --file /etc/hostname"), :immediately
 end
 
-service "network" do
+service "networking" do
   supports :status => true, :restart => true, :reload => true
   action :nothing
 end
@@ -82,4 +82,3 @@ template "/etc/dhcp/dhclient.conf" do
   mode 0644
   notifies :restart, resources(:service => "network"), :immediately
 end
-

@@ -16,12 +16,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-r = package "libxml2-devel"  do
+r = package "libxml2-dev"  do
   action :nothing
 end
 r.run_action(:install)
 
-r = package "libxslt-devel" do
+r = package "libxslt-dev" do
   action :nothing
 end
 r.run_action(:install)

@@ -21,43 +21,47 @@ include_recipe 'route53'
 
 aws = Chef::EncryptedDataBagItem.load("aws", "route53")
 
-# "i-17734b7c.example.com" => ec2.public_hostname
-route53_rr node[:ec2][:instance_id] do
+desiredHostName = node["analytics"]["host_name"]
+# existingInstanceHostName = node["analytics"]["host_name"]
+
+friendlyFqdn = "#{desiredHostName}.#{node[:route53][:zone]}"
+instanceIdFqdn = "#{node[:ec2][:instance_id]}.#{node[:route53][:zone]}"
+ec2PublicHostName = "#{node[:ec2][:public_hostname]}."
+
+route53_rr "#{ec2PublicHostName} => #{friendlyFqdn}" do
   zone node[:route53][:zone]
 
-  aws_access_key_id aws["aws_access_key_id"]
-  aws_secret_access_key aws["aws_secret_access_key"]
+  aws_access_key_id aws["access_key"]
+  aws_secret_access_key aws["secret_key"]
 
-  fqdn "#{node[:ec2][:instance_id]}.#{node[:route53][:zone]}"
+  fqdn friendlyFqdn
   type "CNAME"
-  values(["#{node[:ec2][:public_hostname]}."])
-
-  action :create
-end
-
-t = node["route53"]["ec2"]["type"]
-
-new_hostname = "#{t}-#{node["ec2"]["instance_id"]}"
-new_fqdn = "#{new_hostname}.#{node[:route53][:zone]}"
-
-route53_rr new_hostname do
-  zone node[:route53][:zone]
-  aws_access_key_id aws["aws_access_key_id"]
-  aws_secret_access_key aws["aws_secret_access_key"]
-
-  fqdn new_fqdn
-  type "CNAME"
-  values(["#{node[:ec2][:public_hostname]}."])
+  values([ec2PublicHostName])
 
   action :update
 end
 
-ruby_block "edit etc hosts" do
-  block do
-    rc = Chef::Util::FileEdit.new("/etc/hosts")
-    rc.search_file_replace_line(/^127\.0\.0\.1(.*)localhost.localdomain localhost$/, "127.0.0.1 #{new_fqdn} #{new_hostname} localhost")
-    rc.write_file
-  end
+route53_rr "#{ec2PublicHostName} => #{instanceIdFqdn}" do
+  zone node[:route53][:zone]
+
+  aws_access_key_id aws["access_key"]
+  aws_secret_access_key aws["secret_key"]
+
+  fqdn instanceIdFqdn
+  type "CNAME"
+  values([ec2PublicHostName])
+
+  action :update
+end
+
+new_hostname = desiredHostName      
+new_fqdn = friendlyFqdn
+
+hostsfile_entry '127.0.0.1' do
+  hostname  new_fqdn
+  aliases   [new_hostname, 'localhost']
+  comment   'Created by chef::route53::ec2'
+  action    :create
 end
 
 execute "hostname --file /etc/hostname" do
@@ -65,7 +69,7 @@ execute "hostname --file /etc/hostname" do
 end
 
 file "/etc/hostname" do
-  content "#{new_hostname}"
+  content "#{new_fqdn}"
   notifies :run, resources(:execute => "hostname --file /etc/hostname"), :immediately
 end
 

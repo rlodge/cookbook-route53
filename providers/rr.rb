@@ -25,12 +25,14 @@ action :create do
   if zone_id.nil?
     raise "Route53 Zone #{new_resource.zone} does not exist"
   end
+  
+  ttl = new_resource.ttl || node['route53']['ttl']
 
   rr = resource_record(zone_id, new_resource.fqdn, new_resource.type)
   if rr.nil?
     Chef::Log.debug("Route53 Record #{new_resource.fqdn} does not exist, creating.")
     create_resource_record(zone_id, new_resource.fqdn,
-        new_resource.type, new_resource.ttl, new_resource.values)
+        new_resource.type, ttl, new_resource.values)
   else
     Chef::Log.debug("Already have #{new_resource.type} Record for #{new_resource.fqdn}, skipping.")
   end
@@ -43,16 +45,28 @@ action :update do
     raise "Route53 Zone #{new_resource.zone} does not exist"
   end
 
+  ttl = new_resource.ttl || node['route53']['ttl']
+
   rr = resource_record(zone_id, new_resource.fqdn, new_resource.type)
   if rr.nil?
     Chef::Log.debug("Route53 Record #{new_resource.fqdn} does not exist, creating.")
     create_resource_record(zone_id, new_resource.fqdn,
-        new_resource.type, new_resource.ttl, new_resource.values)
+        new_resource.type, ttl, new_resource.values)
   else
     Chef::Log.debug("Already have #{new_resource.type} Record for #{new_resource.fqdn}, updating.")
     update_resource_record(zone_id, new_resource.fqdn,
-        new_resource.type, new_resource.ttl, new_resource.values, rr)
+        new_resource.type, ttl, new_resource.values, rr)
 
   end
 end
+
+action :delete do
+  zone_id = find_zone_id(new_resource.zone)
+  if zone_id.nil?
+    raise "Route53 Zone #{new_resource.zone} does not exist"
+  end
+  
+  delete_resource_record(zone_id, new_resource.fqdn, new_resource.type)
+end
+
 private

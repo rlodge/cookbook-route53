@@ -66,18 +66,28 @@ module Opscode
 
         # Create if it doesn't exising in route53 already
         if rr.nil?
-         create_resource_record(zone_id, fqdn, type, ttl, values)
+          create_resource_record(zone_id, fqdn, type, ttl, values)
         else
-
+          removeRecord = { :name => fqdn, :type => rr['Type'], :ttl => rr['TTL'], :resource_records => rr['ResourceRecords'],
+          		   :action => "DELETE" }
+          createRecord = { :name => fqdn, :type => type, :ttl => ttl, :resource_records => values,
+          		   :action => "CREATE" }
+          
+          change_batch = [removeRecord, createRecord]
+          execute_change_batch(zone_id, change_batch, "Update #{type} record for #{fqdn}")
         end
       end
 
       def create_resource_record(zone_id, fqdn, type, ttl, values )
-        record = { :name => fqdn, :type => type, :ttl => 3600, :resource_records => values,
+        record = { :name => fqdn, :type => type, :ttl => ttl, :resource_records => values,
                    :action => "CREATE" }
 
         change_batch = [record]
-        options = { :comment => "Change #{type} record for #{fqdn}"}
+        execute_change_batch(zone_id, change_batch, "Create #{type} record for #{fqdn}")
+      end
+      
+      def execute_change_batch(zone_id, change_batch, description)
+        options = { :comment => description}
         response = route53.change_resource_record_sets( zone_id, change_batch, options)
         if response.status == 200
           change_id = response.body['Id']
@@ -92,14 +102,28 @@ module Opscode
             change_id = response.body['Id']
             status = response.body['Status']
           end
-          Chef::Log.info("Creating Resource Record for  #{fqdn} (#{type}) - #{status}")
+          Chef::Log.info("Pending execution for: #{description} (#{change_id}) - #{status}")
+        end
+      end
+      
+      def delete_resource_record(zone_id, fqdn, type)
+        rr = resource_record(zone_id, fqdn, type)
+        if rr.nil?
+        	Chef::Log.warn("Requested delete of nonexistant record set #{fqdn}/#{type}; ignoring.")
+        else
+          removeRecord = { :name => fqdn, :type => rr['Name'], :ttl => rr['TTL'], :resource_records => rr['ResourceRecords'],
+          		   :action => "DELETE" }
+          
+          change_batch = [removeRecord]
+          execute_change_batch(zone_id, change_batch, "Remove #{type} record for #{fqdn}")
         end
       end
 
       def route53
         @@route53 ||= Fog::DNS.new(:provider => 'AWS',
               :aws_access_key_id => new_resource.aws_access_key_id,
-              :aws_secret_access_key => new_resource.aws_secret_access_key)
+              :aws_secret_access_key => new_resource.aws_secret_access_key,
+              :persistent => false)
        end
     end
   end

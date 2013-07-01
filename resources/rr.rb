@@ -18,7 +18,7 @@
 # limitations under the License.
 #
 
-actions :create, :update #, :delete, :replace
+actions :create, :update, :delete
 
 attribute :fqdn, :kind_of => String
 attribute :type, :kind_of => String

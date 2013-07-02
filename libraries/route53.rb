@@ -68,13 +68,17 @@ module Opscode
         if rr.nil?
           create_resource_record(zone_id, fqdn, type, ttl, values)
         else
-          removeRecord = { :name => fqdn, :type => rr['Type'], :ttl => rr['TTL'], :resource_records => rr['ResourceRecords'],
-          		   :action => "DELETE" }
-          createRecord = { :name => fqdn, :type => type, :ttl => ttl, :resource_records => values,
-          		   :action => "CREATE" }
+          removeRecord = { :name => fqdn, :type => rr['Type'], :ttl => rr['TTL'], :resource_records => rr['ResourceRecords']}
+          createRecord = { :name => fqdn, :type => type, :ttl => ttl, :resource_records => values}
           
-          change_batch = [removeRecord, createRecord]
-          execute_change_batch(zone_id, change_batch, "Update #{type} record for #{fqdn}")
+          if removeRecord == createRecord
+          	Chef::Log.info("Not updating #{fqdn}; no changes necessary")
+          else
+          	removeRecord[:action] = "DELETE"
+          	createRecord[:action] = "CREATE"
+						change_batch = [removeRecord, createRecord]
+						execute_change_batch(zone_id, change_batch, "Update #{type} record for #{fqdn}")
+          end
         end
       end
 

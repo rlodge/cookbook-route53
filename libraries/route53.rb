@@ -68,8 +68,8 @@ module Opscode
         if rr.nil?
           create_resource_record(zone_id, fqdn, type, ttl, values)
         else
-          removeRecord = { :name => fqdn, :type => rr['Type'], :ttl => rr['TTL'], :resource_records => rr['ResourceRecords']}
-          createRecord = { :name => fqdn, :type => type, :ttl => ttl, :resource_records => values}
+          removeRecord = { :name => fqdn, :type => rr['Type'], :ttl => rr['TTL'].to_i, :resource_records => rr['ResourceRecords']}
+          createRecord = { :name => fqdn, :type => type, :ttl => ttl.to_i, :resource_records => values}
           
           if removeRecord == createRecord
           	Chef::Log.info("Not updating #{fqdn}; no changes necessary")
